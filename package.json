@@ -1,0 +1,22 @@
+{
+  "name": "carbonjs",
+  "version": "1.0.0",
+  "description": "A browser client library for the carbon project",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Quvia-Shadow-Organization/carbonjs.git"
+  },
+  "author": "jiricekcz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Quvia-Shadow-Organization/carbonjs/issues"
+  },
+  "homepage": "https://github.com/Quvia-Shadow-Organization/carbonjs#readme",
+  "dependencies": {
+    "typescript": "^4.1.5"
+  }
+}
