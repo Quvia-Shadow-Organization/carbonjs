@@ -83,13 +83,6 @@ export class User {
         return true;
     }
     //! STATIC METHODS
-    /**
-     * Registers a new user with an email and a password
-     * @param email The email under which the user should be registred
-     * @param password The password for the user
-     * @example
-     * await User.register("test@email.com", "testingpassword"); // Returns true, if email is not in use, or other error
-     */
     static async register(email: string, password: string): Promise<boolean> {
         const r = await http.post({}, constants.url, {
             email, password
