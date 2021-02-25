@@ -55,8 +55,8 @@ export class User {
         this.eventCallbacks[event].push(callback);
     }
 
-    remove(event: "error", callback: (origin: UserErrorOrigin, code: http.unsuccessCode, message: string) => void): void;
-    remove(event: "login", callback: () => void): void;
+    remove(event: "error", callback: (origin: UserErrorOrigin, code: http.unsuccessCode, message: string) => void): boolean;
+    remove(event: "login", callback: () => void): boolean;
     remove(event: UserEvent, callback: EventCallback): boolean {
         if (!this.eventCallbacks[event]) this.eventCallbacks[event] = [];
         var i = this.eventCallbacks[event].indexOf(callback);
