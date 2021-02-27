@@ -7,7 +7,7 @@ declare type UserEvent = "login" | "error";
 declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID";
 export class User {
     authorized: boolean = false;
-    uuid?: number;
+    uuid?: string;
     verificationKey?: string;
     readonly httpClient: http.Client;
     private readonly eventCallbacks: eventCallbacks<EventCallback> = {};
