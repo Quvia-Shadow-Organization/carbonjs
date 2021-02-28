@@ -125,7 +125,7 @@ export class ColorTheme {
         json.forEach((v, i) => {
             if (!this.colors[i]) this.colors[i] = Color.default;
             this.colors[i].updateWithJSON(json[i])
-        })     
+        })
     }
 }
 export class Color {
@@ -144,6 +144,16 @@ export class Color {
     }
     toJSON(): JSONColor {
         return { r: this.r, g: this.g, b: this.b, a: this.a };
+    }
+    toRGBA(): string {
+        return `rgba{${this.r * 255}, ${this.g * 255}, ${this.b * 255}, ${(this.a || 1) * 255}}`;
+    }
+    toHEX(precision: number): string {
+        var l = 16 ** precision - 1;
+        var r = Math.round(this.r * l).toString(16);
+        var g = Math.round(this.r * l).toString(16);
+        var b = Math.round(this.r * l).toString(16);
+        return "#" + r + g + b;
     }
     updateWithJSON(json: JSONColor): boolean {
         if (typeof json != "object") return false;
