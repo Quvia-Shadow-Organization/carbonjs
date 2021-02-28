@@ -1,5 +1,5 @@
 import http from './modules/http';
-import constants from './modules/constants';
+import * as constants from './modules/constants';
 
 declare type EventArgs = Array<any>;
 declare type EventCallback = (...args: EventArgs) => void;

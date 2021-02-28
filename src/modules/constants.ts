@@ -1,10 +1,4 @@
 /**
- * The namespace containing all the constants.
+ * The url of the api without the /api/ 
  */
-namespace Constants {
-    /**
-     * The url of the api without the /api/ 
-     */
-    export const url: string = "http://localhost/";
-}
-export = Constants;
+export const url: string = "http://localhost/";
