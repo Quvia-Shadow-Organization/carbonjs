@@ -4,15 +4,17 @@ import * as constants from './modules/constants';
 declare type EventArgs = Array<any>;
 declare type EventCallback = (...args: EventArgs) => void;
 declare type UserEvent = "login" | "error";
-declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID";
+declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID" | "saveColorTheme" | "fetchColorTheme";
 export class User {
     authorized: boolean = false;
     uuid?: string;
     verificationKey?: string;
+    readonly colorTheme: ColorTheme;
     readonly httpClient: http.Client;
     private readonly eventCallbacks: eventCallbacks<EventCallback> = {};
     constructor() {
         this.httpClient = new http.Client({}, constants.url);
+        this.colorTheme = new ColorTheme(this);
     }
     //! METHODS
     async login(email: string, password: string): Promise<boolean> {
@@ -36,7 +38,6 @@ export class User {
         }
         return true;
     }
-
 
     //! EVENTS
     emit(event: "error", origin: UserErrorOrigin, code: http.unsuccessCode, message: string): void;
@@ -94,6 +95,82 @@ export class User {
     }
 
 }
+
+export class ColorTheme {
+    readonly user: User;
+    colors: Array<Color> = [];
+    constructor(user: User) {
+        this.user = user;
+    }
+    async fetch(): Promise<ColorTheme> {
+        const r = await this.user.httpClient.get("/api/me/colorTheme/");
+        if (!r.success) {
+            this.user.emit("error", "fetchColorTheme", r.code, r.msg);
+            return this;
+        }
+        this.updateWithJSON(r.body);
+        return this;
+    }
+    async save(): Promise<boolean> {
+        const r = await this.user.httpClient.post("/api/me/colorTheme", this.toJSON());
+        if (!r.success) this.user.emit("error", "saveColorTheme", r.code, r.msg);
+        return r.success;
+    }
+
+    private toJSON(): JSONColorTheme {
+        return this.colors.map(c => c.toJSON());
+    }
+    private updateWithJSON(json: JSONColorTheme): void {
+        if (!(json instanceof Array)) return;
+        json.forEach((v, i) => {
+            if (!this.colors[i]) this.colors[i] = Color.default;
+            this.colors[i].updateWithJSON(json[i])
+        })     
+    }
+}
+export class Color {
+    r: number;
+    g: number;
+    b: number;
+    a?: number;
+    constructor(r: number, g: number, b: number, a?: number) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        if (a) this.a = a;
+    }
+    toJSONString(): string {
+        return JSON.stringify(this.toJSON());
+    }
+    toJSON(): JSONColor {
+        return { r: this.r, g: this.g, b: this.b, a: this.a };
+    }
+    updateWithJSON(json: JSONColor): boolean {
+        if (typeof json != "object") return false;
+        this.r = json.r;
+        this.g = json.g;
+        this.b = json.b;
+        if (json.a) this.a = json.a;
+        return true;
+    }
+    static fromHEX(hexString: string): Color {
+        if (hexString.startsWith("#")) hexString = hexString.substr(1);
+        var r: number, g: number, b: number;
+        if (hexString.length % 3 == 0) {
+            var cl = hexString.length / 3;
+            console.log(parseInt(hexString.slice(0, cl), 16));
+            r = parseInt(hexString.slice(0, cl), 16) / (16 ** cl);
+            g = parseInt(hexString.slice(cl, 2 * cl), 16) / (16 ** cl);
+            b = parseInt(hexString.slice(cl * 2, cl * 3), 16) / (16 ** cl);
+            return new Color(r, g, b);
+        } else {
+            return Color.default;
+        }
+    }
+    static default = new Color(0, 0, 0);
+}
 interface eventCallbacks<C> {
     [event: string]: Array<C>;
 }
+type JSONColor = { r: number, g: number, b: number, a?: number };
+type JSONColorTheme = Array<JSONColor>;
