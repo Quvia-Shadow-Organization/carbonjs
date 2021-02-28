@@ -1,4 +1,4 @@
-import http from './modules/http';
+import * as http from './modules/http';
 import * as constants from './modules/constants';
 
 declare type EventArgs = Array<any>;
