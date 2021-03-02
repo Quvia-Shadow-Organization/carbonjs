@@ -2,6 +2,7 @@
 export function get(headers: any, url: string): Promise<Response> {
     return new Promise<Response>((resolve, reject) => {
         const r = new XMLHttpRequest();
+        r.open("GET", url);
         for (var k in headers) {
             r.setRequestHeader(k, headers[k]);
         }
@@ -25,12 +26,12 @@ export function get(headers: any, url: string): Promise<Response> {
                 }
             }
         }
-        r.open("GET", url);
     });
 }
 export function del(headers: any, url: string): Promise<Response> {
     return new Promise<Response>((resolve, reject) => {
         const r = new XMLHttpRequest();
+        r.open("DELETE", url);
         for (var k in headers) {
             r.setRequestHeader(k, headers[k]);
         }
@@ -54,12 +55,12 @@ export function del(headers: any, url: string): Promise<Response> {
                 }
             }
         }
-        r.open("DELETE", url);
     });
 }
 export function post(headers: any, url: string, data: any): Promise<Response> {
     return new Promise<Response>((resolve, reject) => {
         const r = new XMLHttpRequest();
+        r.open("POST", url);
         for (var k in headers) {
             r.setRequestHeader(k, headers[k]);
         }
@@ -83,13 +84,13 @@ export function post(headers: any, url: string, data: any): Promise<Response> {
                 }
             }
         }
-        r.open("POST", url);
         r.send(JSON.stringify(data));
     });
 }
 export function put(headers: any, url: string, data: any): Promise<Response> {
     return new Promise<Response>((resolve, reject) => {
         const r = new XMLHttpRequest();
+        r.open("PUT", url);
         for (var k in headers) {
             r.setRequestHeader(k, headers[k]);
         }
@@ -113,13 +114,13 @@ export function put(headers: any, url: string, data: any): Promise<Response> {
                 }
             }
         }
-        r.open("PUT", url);
         r.send(JSON.stringify(data));
     });
 }
 export function patch(headers: any, url: string, data: any): Promise<Response> {
     return new Promise<Response>((resolve, reject) => {
         const r = new XMLHttpRequest();
+        r.open("PATCH", url);
         for (var k in headers) {
             r.setRequestHeader(k, headers[k]);
         }
@@ -143,7 +144,6 @@ export function patch(headers: any, url: string, data: any): Promise<Response> {
                 }
             }
         }
-        r.open("PATCH", url);
         r.send(JSON.stringify(data));
     });
 }

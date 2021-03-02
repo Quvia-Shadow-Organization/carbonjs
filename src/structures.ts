@@ -4,17 +4,37 @@ import * as constants from './modules/constants';
 declare type EventArgs = Array<any>;
 declare type EventCallback = (...args: EventArgs) => void;
 declare type UserEvent = "login" | "error";
-declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID" | "saveColorTheme" | "fetchColorTheme";
-export class User {
+declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID" | "saveColorTheme" | "fetchColorTheme" | "getSchools" | "fetchSchool";
+export abstract class BaseStructure {
+    constructor() {
+
+    }
+    public abstract getUniqueId(): string;
+    public abstract fetch(): Promise<BaseStructure>;
+}
+export class User extends BaseStructure {
     authorized: boolean = false;
     uuid?: string;
     verificationKey?: string;
     readonly colorTheme: ColorTheme;
     readonly httpClient: http.Client;
+    readonly schools: SchoolManager = new SchoolManager(this);
     private readonly eventCallbacks: eventCallbacks<EventCallback> = {};
     constructor() {
+        super();
         this.httpClient = new http.Client({}, constants.url);
         this.colorTheme = new ColorTheme(this);
+    }
+    getUniqueId(): string {
+        return this.uuid || "";
+    }
+    async fetch(): Promise<User> {
+        await Promise.all([
+            this.updateUUID(),
+            this.colorTheme.fetch(),
+            this.schools.fetch()
+        ])
+        return this;
     }
     //! METHODS
     async login(email: string, password: string): Promise<boolean> {
@@ -178,6 +198,99 @@ export class Color {
         }
     }
     static default = new Color(0, 0, 0);
+}
+export class Collection<K, V> extends Map<K, V> {
+    constructor() {
+        super();
+    }
+    array(): Array<V> {
+        const r: Array<V> = [];
+        for (var k of this.entries()) {
+            r.push(k[1]);
+        }
+        return r;
+    }
+}
+export abstract class Manager<T extends BaseStructure> {
+    readonly user: User;
+    cache: Collection<string, T> = new Collection<string, T>();
+    constructor(user: User) {
+        this.user = user;
+    }
+    async fetch(force?: boolean): Promise<Collection<string, T>>;
+    async fetch(id: string, force?: boolean): Promise<T>;
+    async fetch(id?: string | boolean, force?: boolean): Promise<T | Collection<string, T>> {
+        if (typeof id == "string") {
+            var e = this.cache.get(id);
+            if (!e || force) {
+                e = await this.fetchID(id);
+                this.cache.set(e.getUniqueId(), e);
+            }
+            return e;
+        }
+
+        const all = await this.fetchAll(id);
+        if (all != []) this.cache.clear();
+        for (const t of all) {
+            this.cache.set(t.getUniqueId(), t);
+        }
+        return this.cache;
+    }
+    [Symbol.iterator]() {
+        return this.cache.array().values();
+    }
+    protected abstract fetchAll(force?: boolean): Promise<Array<T>>;
+    protected abstract fetchID(id: string): Promise<T>;
+
+}
+export class SchoolManager extends Manager<School> {
+    constructor(user: User) {
+        super(user);
+    }
+    protected async fetchAll(force: boolean = false): Promise<Array<School>> {
+        const r = await this.user.httpClient.get("/api/me/schools/");
+        if (!r.success) {
+            this.user.emit("error", "getSchools", r.code, r.msg)
+            return [];
+        }
+        var rv: Array<School> = [];
+        for (var id of r.body) {
+            rv.push(await this.fetch(id, force));
+        }
+        return rv;
+    }
+    protected async fetchID(id: string): Promise<School> {
+        const s = new School(this.user, id);
+        await s.fetch();
+        return s;
+    }
+}
+export class School extends BaseStructure {
+    readonly usid: string;
+    readonly user: User;
+    info?: SchoolInfo;
+    constructor(user: User, usid: string) {
+        super();
+        this.usid = usid;
+        this.user = user;
+    }
+    getUniqueId(): string {
+        return this.usid;
+    }
+    async fetch(): Promise<School> {
+        await Promise.all([
+            this.updateInfo()
+        ])
+        return this;
+    }
+    private async updateInfo(): Promise<void> {
+        var r = await this.user.httpClient.get("/api/school/" + this.usid + "/info");
+        if (!r.success) return this.user.emit("error", "fetchSchool", r.code, r.msg);
+        this.info = r.body;
+    }
+}
+interface SchoolInfo {
+    serverVersion: string;
 }
 interface eventCallbacks<C> {
     [event: string]: Array<C>;
