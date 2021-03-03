@@ -291,6 +291,7 @@ export class School extends BaseStructure {
 }
 interface SchoolInfo {
     serverVersion: string;
+    selfhosted: boolean;
 }
 interface eventCallbacks<C> {
     [event: string]: Array<C>;
