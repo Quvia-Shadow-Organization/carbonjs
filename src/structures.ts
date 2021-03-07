@@ -244,7 +244,7 @@ export abstract class Manager<T extends BaseStructure> {
         return async function*() {
             const ids = await t.fetchAllIDs();
             for (const id of ids) {
-                yield t.fetch(id);
+                yield await t.fetch(id);
             }
         }();
     }
