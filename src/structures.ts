@@ -239,31 +239,44 @@ export abstract class Manager<T extends BaseStructure> {
     [Symbol.iterator]() {
         return this.cache.array().values();
     }
-    protected abstract fetchAll(force?: boolean): Promise<Array<T>>;
+    [Symbol.asyncIterator]() {
+        const t =  this;
+        return async function*() {
+            const ids = await t.fetchAllIDs();
+            for (const id of ids) {
+                yield t.fetch(id);
+            }
+        }();
+    }
+    protected async fetchAll(force: boolean = false): Promise<Array<T>> {
+        const ids = await this.fetchAllIDs();
+        var promises: Array<Promise<T>> = [];
+        for (var id of ids) {
+            promises.push(this.fetch(id, force));
+        }
+        return await Promise.all(promises);
+    };
     protected abstract fetchID(id: string): Promise<T>;
-
+    protected abstract fetchAllIDs(): Promise<Array<string>>;
 }
 export class SchoolManager extends Manager<School> {
     constructor(user: User) {
         super(user);
-    }
-    protected async fetchAll(force: boolean = false): Promise<Array<School>> {
-        const r = await this.user.httpClient.get("/api/me/schools/");
-        if (!r.success) {
-            this.user.emit("error", "getSchools", r.code, r.msg)
-            return [];
-        }
-        var promises: Array<Promise<School>> = [];
-        for (var id of r.body) {
-            promises.push(this.fetch(id, force));
-        }
-        return await Promise.all(promises);
     }
     protected async fetchID(id: string): Promise<School> {
         const s = new School(this.user, id);
         await s.fetch();
         return s;
     }
+    protected async fetchAllIDs(): Promise<Array<string>> {
+        const r = await this.user.httpClient.get("/api/me/schools/");
+        if (!r.success) {
+            this.user.emit("error", "getSchools", r.code, r.msg)
+            return [];
+        }
+        return r.body;
+    }
+
 }
 export class School extends BaseStructure {
     readonly usid: string;
