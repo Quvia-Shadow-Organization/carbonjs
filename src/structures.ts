@@ -253,11 +253,11 @@ export class SchoolManager extends Manager<School> {
             this.user.emit("error", "getSchools", r.code, r.msg)
             return [];
         }
-        var rv: Array<School> = [];
+        var promises: Array<Promise<School>> = [];
         for (var id of r.body) {
-            rv.push(await this.fetch(id, force));
+            promises.push(this.fetch(id, force));
         }
-        return rv;
+        return await Promise.all(promises);
     }
     protected async fetchID(id: string): Promise<School> {
         const s = new School(this.user, id);
