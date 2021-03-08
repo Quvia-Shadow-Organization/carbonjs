@@ -5,10 +5,10 @@ declare type EventArgs = Array<any>;
 declare type EventCallback = (...args: EventArgs) => void;
 declare type UserEvent = "login" | "error";
 declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID" | "saveColorTheme" | "fetchColorTheme" | "getSchools" | "fetchSchool";
-export abstract class BaseStructure {
-    constructor() {
-
-    }
+export abstract class Base {
+    public abstract fetch(...args: any[]): Promise<any>;
+}
+export abstract class BaseStructure extends Base{
     public abstract getUniqueId(): string;
     public abstract fetch(): Promise<BaseStructure>;
 }
@@ -211,10 +211,11 @@ export class Collection<K, V> extends Map<K, V> {
         return r;
     }
 }
-export abstract class Manager<T extends BaseStructure> {
+export abstract class Manager<T extends BaseStructure> extends Base {
     readonly user: User;
     cache: Collection<string, T> = new Collection<string, T>();
     constructor(user: User) {
+        super();
         this.user = user;
     }
     async fetch(force?: boolean): Promise<Collection<string, T>>;
