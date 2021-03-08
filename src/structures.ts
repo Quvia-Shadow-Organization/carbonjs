@@ -11,13 +11,14 @@ export abstract class Base {
     public abstract toJSON(...args: any[]): any;
 }
 export abstract class BaseStructure extends Base {
+    public abstract user: User;
     public abstract getUniqueId(): string;
     get id(): string {
         return this.getUniqueId();
     }
     public abstract fetch(): Promise<BaseStructure>;
 }
-export class User extends BaseStructure {
+export class User {
     authorized: boolean = false;
     uuid?: string;
     verificationKey?: string;
@@ -26,12 +27,14 @@ export class User extends BaseStructure {
     readonly schools: SchoolManager = new SchoolManager(this);
     private readonly eventCallbacks: eventCallbacks<EventCallback> = {};
     constructor() {
-        super();
         this.httpClient = new http.Client({}, constants.url);
         this.colorTheme = new ColorTheme(this);
     }
     getUniqueId(): string {
         return this.uuid || "";
+    }
+    get id(): string {
+        return this.getUniqueId();
     }
     async fetch(): Promise<User> {
         await Promise.all([
