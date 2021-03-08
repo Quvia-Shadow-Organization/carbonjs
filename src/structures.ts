@@ -12,6 +12,9 @@ export abstract class Base {
 }
 export abstract class BaseStructure extends Base {
     public abstract getUniqueId(): string;
+    get id(): string {
+        return this.getUniqueId();
+    }
     public abstract fetch(): Promise<BaseStructure>;
 }
 export class User extends BaseStructure {
@@ -416,6 +419,9 @@ export abstract class Manager<T extends BaseStructure> extends Base {
             }
         }();
     }
+    toJSON(): any {
+        return this.cache.toJSON();
+    }
     protected async fetchAll(force: boolean = false): Promise<Array<T>> {
         const ids = await this.fetchAllIDs();
         var promises: Array<Promise<T>> = [];
@@ -425,10 +431,8 @@ export abstract class Manager<T extends BaseStructure> extends Base {
         return await Promise.all(promises);
     };
     protected abstract fetchID(id: string): Promise<T>;
-    toJSON(): any {
-        return this.cache.toJSON();
-    }
     protected abstract fetchAllIDs(): Promise<Array<string>>;
+    public abstract add(id: string): T;
 }
 export class SchoolManager extends Manager<School> {
     constructor(user: User) {
@@ -446,6 +450,11 @@ export class SchoolManager extends Manager<School> {
             return [];
         }
         return r.body;
+    }
+    public add(usid: string): School {
+        const school = new School(this.user, usid);
+        this.cache.set(usid, school);
+        return school;
     }
     toString(): string {
         return "<SchoolManager>";
