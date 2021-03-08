@@ -1,6 +1,6 @@
 {
   "name": "@carbon-class/carbon.js",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "A browser client library for the carbon project",
   "main": "src/index.ts",
   "scripts": {
