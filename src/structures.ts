@@ -1,10 +1,10 @@
 import * as http from './modules/http';
 import * as constants from './modules/constants';
-
+import * as perm from "./permissionsSubstructures";
 declare type EventArgs = Array<any>;
 declare type EventCallback = (...args: EventArgs) => void;
 declare type UserEvent = "login" | "error";
-declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID" | "saveColorTheme" | "fetchColorTheme" | "getSchools" | "fetchSchool";
+declare type UserErrorOrigin = "login" | "changePassword" | "updateUUID" | "saveColorTheme" | "fetchColorTheme" | "getSchools" | "fetchSchool" | "fetchSchoolPermissions";
 export abstract class Base {
     public abstract fetch(...args: any[]): Promise<any>;
     public abstract toString(...args: any[]): string;
@@ -45,7 +45,7 @@ export class User {
         return this;
     }
     toString(): string {
-        if (!this.uuid) return "<User>"; 
+        if (!this.uuid) return "<User>";
         return `<User ${this.uuid}>`;
     }
     toJSON(): any {
@@ -53,7 +53,7 @@ export class User {
             uuid: this.uuid,
             verificationKey: this.verificationKey,
             authorized: this.authorized,
-            schools: this.schools.toJSON(), 
+            schools: this.schools.toJSON(),
             colorTheme: this.colorTheme.toJSON()
         }
     }
@@ -247,7 +247,7 @@ export class Collection<K, V> extends Map<K, V> {
     }
     elementArray(): Array<CollectionElement<K, V>> {
         var rv: Array<CollectionElement<K, V>> = [];
-        for (var [k,v] of this.entries()) {
+        for (var [k, v] of this.entries()) {
             rv.push(new CollectionElement<K, V>(k, v));
         }
         return rv;
@@ -466,7 +466,9 @@ export class SchoolManager extends Manager<School> {
 export class School extends BaseStructure {
     readonly usid: string;
     readonly user: User;
-    info?: SchoolInfo;
+    
+    readonly permissions: SchoolUserPermissions = new SchoolUserPermissions(this.user, this);
+    readonly info: SchoolInfo = new SchoolInfo(this.user, this);
     constructor(user: User, usid: string) {
         super();
         this.usid = usid;
@@ -477,14 +479,10 @@ export class School extends BaseStructure {
     }
     async fetch(): Promise<School> {
         await Promise.all([
-            this.updateInfo()
+            this.info.fetch(),
+            this.permissions.fetch()
         ])
         return this;
-    }
-    private async updateInfo(): Promise<void> {
-        var r = await this.user.httpClient.get("/api/school/" + this.usid + "/info");
-        if (!r.success) return this.user.emit("error", "fetchSchool", r.code, r.msg);
-        this.info = r.body;
     }
     toString(): string {
         return `<School ${this.usid}>`;
@@ -496,9 +494,71 @@ export class School extends BaseStructure {
         }
     }
 }
-interface SchoolInfo {
-    serverVersion: string;
-    selfhosted: boolean;
+export class SchoolUserPermissions extends Base {
+    readonly user: User;
+    readonly school: School;
+    readonly info: perm.InfoPermissions = new perm.InfoPermissions();
+    constructor(user: User, school: School) {
+        super();
+        this.user = user;
+        this.school = school;
+    }
+
+    async fetch(): Promise<SchoolUserPermissions> {
+        const r = await this.user.httpClient.get("/api/school/" + this.school.id + "/permissions");
+        if (!r.success) {
+            this.user.emit("error", "fetchSchoolPermissions", r.code, r.msg);
+            return this;
+        }
+        this.setFromJSON(r.body);
+        return this;
+    }
+    private setFromJSON(data: perm.PermissionsJSON): void {
+        this.info.update(data.readInfo, data.editInfo);
+    }
+    toJSON(): any {
+        return {
+            info: this.info.toJSON()
+        }
+    }
+    toString(): string {
+        return "<Permissions>"
+    }
+}
+class SchoolInfo extends Base {
+    readonly user: User;
+    readonly school: School;
+
+    serverVersion?: string;
+    selfhosted?: boolean;
+
+    constructor(user: User, school: School) {
+        super();
+        this.user = user;
+        this.school = school;
+    }
+    async fetch(): Promise<SchoolInfo> {
+        var r = await this.user.httpClient.get("/api/school/" + this.school.usid + "/info");
+        if (!r.success) {
+            this.user.emit("error", "fetchSchool", r.code, r.msg);
+            return this;
+        }
+        this.setFromJSON(r.body)
+        return this;
+    }
+    private setFromJSON(obj: any): void {
+        this.selfhosted = obj.selfhosted;
+        this.serverVersion = obj.serverVersion;
+    }
+    toJSON(): any {
+        return {
+            serverVersion: this.serverVersion,
+            selfhosted: this.selfhosted
+        }
+    }
+    toString(): string {
+        return "<SchoolInfo>"
+    }
 }
 interface eventCallbacks<C> {
     [event: string]: Array<C>;
