@@ -1,6 +1,9 @@
 import * as http from './modules/http';
 import * as constants from './modules/constants';
 import * as perm from "./permissionsSubstructures";
+import LanguageInterface from './modules/languageInterface.d';
+
+
 declare type EventArgs = Array<any>;
 declare type EventCallback = (...args: EventArgs) => void;
 declare type UserEvent = "login" | "error";
@@ -466,7 +469,7 @@ export class SchoolManager extends Manager<School> {
 export class School extends BaseStructure {
     readonly usid: string;
     readonly user: User;
-    
+
     readonly permissions: SchoolUserPermissions = new SchoolUserPermissions(this.user, this);
     readonly info: SchoolInfo = new SchoolInfo(this.user, this);
     constructor(user: User, usid: string) {
@@ -558,6 +561,47 @@ class SchoolInfo extends Base {
     }
     toString(): string {
         return "<SchoolInfo>"
+    }
+}
+export class Language extends Base {
+    static readonly cache: Collection<string, Language> = new Collection<string, Language>();
+
+    readonly code: string;
+    content?: LanguageInterface;
+    static httpClient: http.Client = new http.Client({}, constants.url);
+    constructor(code: string) {
+        super();
+        this.code = code;
+        Language.cache.set(code, this);
+    }
+    static async get(code: string): Promise<Language> {
+        const fromCache = this.cache.get(code);
+        if (fromCache) return fromCache;
+        const fetched = new Language(code);
+        await fetched.fetch();
+        return fetched; 
+    }
+    static async getAllCodes(): Promise<Array<string>> {
+        const r = await Language.httpClient.get("/api/langs/");
+        if (!r.success) return await Language.getAllCodes();
+        return r.body;
+    }
+    static async getAll(): Promise<Array<Language>> {
+        const codes = await Language.getAllCodes();
+        const proms = codes.map(v => Language.get(v));
+        return await Promise.all(proms);
+    }
+    async fetch(): Promise<Language> {
+        const r = await Language.httpClient.get("/api/lang/" + this.code);
+        if (!r.success) return await this.fetch();
+        this.content = r.body;
+        return this;
+    }
+    toJSON(): any {
+        return this.content;
+    }
+    toString(): string {
+        return `<Language ${this.code}>`;
     }
 }
 interface eventCallbacks<C> {
