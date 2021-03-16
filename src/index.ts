@@ -1,4 +1,6 @@
 import * as Structures from './structures'
+import * as ls from './modules/localStorage'
+
 
 
 export const User = Structures.User;
@@ -13,3 +15,4 @@ export const Language = Structures.Language;
 export const School = Structures.School;
 export const SchoolManager = Structures.SchoolManager;
 export const SchoolUserPermissions = Structures.SchoolUserPermissions;
+export const storage = ls.storage;
